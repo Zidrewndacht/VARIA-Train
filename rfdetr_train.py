@@ -35,21 +35,21 @@ def load_config(config_path="config.yaml"):
 VARIA_AUG_CONFIG = {
     "Blur": {"p": 0.03},
     "MotionBlur": {
-        "blur_range":(2, 15),
         "p": 0.1
     },
     "RandomRotate90":{"p": 1.0},
     "ShotNoise":{
         "scale_range": (0.03, 0.09),
-        "p":0.25, 
+        "p":0.2, 
     }, 
     "GaussNoise":{
         "std_range": (0.03, 0.09),
         "p":0.2, 
     }, 
     "SaltAndPepper":{
-        "amount_range":(0.001,0.005),
-        "p":0.2, 
+        # "amount_range":(0.001,0.005), #wrong version? "UserWarning: Argument(s) 'amount_range' are not valid for transform SaltAndPepper"
+        "amount": (0.001, 0.006),  # v1.x syntax (instead of amount_range)
+        "p":0.1,
     },
     "ImageCompression": {   # relevant as capture is done with MJPEG
         "quality_range": (50, 85),
@@ -97,7 +97,12 @@ if __name__ == "__main__":
         grad_accum_steps=grad_accum,
         lr=cfg["lr"],
         seed=cfg["seed"],
-        
+
+        # Disabled multi_scale because data does not require this (already pre-sliced multi-scale data) 
+        # AND the trainer defaults to a bogus 864x864 blurry upscale of all my exact 704x704 source data otherwise?!
+        resolution=704,
+        multi_scale=False,  
+
         # EMA & Checkpoints
         use_ema=cfg["use_ema"],
         checkpoint_interval=cfg["checkpoint_interval"],
