@@ -1,3 +1,5 @@
 output
 roboflow_cache
 # .vscode # not ignored to save VScode theme (quiet light red-tinted)
+flatten.py
+flattened_code.md
