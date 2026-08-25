@@ -1,3 +1,4 @@
+:: train.bat
 @echo off
 :: 1.  Start Docker Desktop if it isn’t running yet
 tasklist /FI "IMAGENAME eq Docker Desktop.exe" 2>NUL | find /I "Docker Desktop.exe" >NUL

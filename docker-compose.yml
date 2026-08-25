@@ -1,3 +1,4 @@
+# docker-compose.yaml
 services:
   # ======================================================================
   # DATA SYNC SERVICE
@@ -9,9 +10,9 @@ services:
     volumes:
 ##########################################################################
       # Mount host directory (Read-Write so we can burn the flag)
-      # Set this to the correct folder containing sliced data from 
-      # step 5 of the synthetic data export script suite.
-      - D:\!staging\@Mestrado\PCBA-AOI\output_sliced:/src
+      # FALLBACK: If Conductor doesn't set VARIA_DATASET_DIR, use your manual path.
+      # (Using forward slashes here prevents YAML parsing errors with backslashes)
+      - "${VARIA_DATASET_DIR:-D:/!staging/@Mestrado/PCBA-AOI/output_sliced}:/src"
 ##########################################################################     
       # Mount the Docker volume for the destination
       - rfdetr_dataset:/dest
@@ -31,7 +32,7 @@ services:
       "
 
   # ======================================================================
-  # RF-DETR TRAINING SERVICE
+  # RF-DETR TRAINING / EVALUATION SERVICE
   # ======================================================================
   rfdetr:
     depends_on:
@@ -50,13 +51,20 @@ services:
     volumes:
       # The training container just mounts the populated volume
       - rfdetr_dataset:/workspace/data:ro
-      - ./output:/workspace/output
-      - ./roboflow_cache:/root/.roboflow 
-      - ./config.yaml:/workspace/code/config.yaml:ro
-      - ./rfdetr_train.py:/workspace/code/rfdetr_train.py:ro
+      
+      # FALLBACKS: Map to local relative paths for manual execution
+      - "${VARIA_OUTPUT_DIR:-./output}:/workspace/output"
+      - "${VARIA_METRICS_DIR:-./metrics}:/workspace/metrics"
+      - "${VARIA_CACHE_DIR:-./roboflow_cache}:/root/.roboflow" 
+      - "${VARIA_CONFIG_FILE:-./config.yaml}:/workspace/code/config.yaml:ro"
+      - "${VARIA_TRAIN_SCRIPT:-./rfdetr_train.py}:/workspace/code/rfdetr_train.py:ro"
+      - "${VARIA_EVAL_SCRIPT:-./rfdetr_eval.py}:/workspace/code/rfdetr_eval.py:ro"
+      
     working_dir: /workspace/code
     
-    command: python rfdetr_train.py
+    # FALLBACK: Defaults to training. Conductor overrides this for evaluation.
+    command: ${VARIA_COMMAND:-python rfdetr_train.py}
+    
     stdin_open: true 
     tty: true       
     
