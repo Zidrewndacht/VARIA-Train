@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
         # Hardware config:
         device="cuda",
-        strategy="ddp",
+        strategy="ddp" if cfg["devices"] > 1 else "auto",
         devices=cfg["devices"],
 
         # Injeção do dicionário de augmentações do Albumentations
