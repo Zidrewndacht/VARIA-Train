@@ -15,7 +15,7 @@ services:
       - "${VARIA_DATASET_DIR:-D:/!staging/@Mestrado/PCBA-AOI/output_sliced}:/src"
 ##########################################################################     
       # Mount the Docker volume for the destination
-      - rfdetr_dataset:/dest
+      - varia_sliced_dataset:/dest
     command: >
       sh -c "
       if [ -f /src/.new_data_flag ]; then
@@ -39,7 +39,7 @@ services:
       data-sync:
         condition: service_completed_successfully
     build: .
-    container_name: rfdetr_trainer
+    container_name: varia_rfdetr_trainer
     runtime: nvidia
     deploy:
       resources:
@@ -50,7 +50,7 @@ services:
               capabilities: [gpu]
     volumes:
       # The training container just mounts the populated volume
-      - rfdetr_dataset:/workspace/data:ro
+      - varia_sliced_dataset:/workspace/data:ro
       
       # FALLBACKS: Map to local relative paths for manual execution
       - "${VARIA_OUTPUT_DIR:-./output}:/workspace/output"
@@ -69,7 +69,7 @@ services:
     tty: true       
     
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0,1} # default to dual GPU when running standalone
       - NCCL_DEBUG=INFO
       - NCCL_P2P_DISABLE=1
       - NCCL_IB_DISABLE=1
@@ -79,5 +79,5 @@ services:
     shm_size: '16gb' 
 
 volumes:
-  rfdetr_dataset:
-    name: rfdetr_dataset
+  varia_sliced_dataset:
+    name: varia_sliced_dataset
