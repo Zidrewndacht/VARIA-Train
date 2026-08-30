@@ -16,6 +16,6 @@ RUN apt-get update && apt-get install -y \
 RUN python3.12 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Install RF-DETR
+# Install pinned RF-DETR with all needed extras
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir "rfdetr[train,loggers]"
+RUN pip install --no-cache-dir "rfdetr[train,loggers,cli,augment]==1.9.4"
