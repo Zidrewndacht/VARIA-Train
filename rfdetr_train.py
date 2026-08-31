@@ -31,7 +31,7 @@ def load_config(config_path="config.yaml"):
 # ==============================================================================
 # RF-DETR ALBUMENTATIONS CONFIGURATION
 # ==============================================================================
-#updated according to current documentation: https://albumentations.ai/docs/api-reference/
+# Updated according to current documentation: https://albumentations.ai/docs/api-reference/
 VARIA_AUG_CONFIG = {
     "Blur": {"p": 0.03},
     "MotionBlur": {
@@ -87,6 +87,23 @@ if __name__ == "__main__":
     
     print(f"Effective batch size: {cfg['batch_size']} (per-GPU) x {cfg['devices']} (GPUs) x {grad_accum} (accum) = {actual_effective}")
     
+    # --------------------------------------------------------------------------
+    # AUGMENTATION RESOLUTION
+    # --------------------------------------------------------------------------
+    use_augmentations = cfg.get("augmentations", True)
+    custom_aug_config = cfg.get("aug_config", None)
+
+    if not use_augmentations:
+        # Pass None (or {} if rfdetr strictly requires a dict) to disable Albumentations
+        final_aug_config = {}
+        print("Augmentations explicitly disabled by config.")
+    elif custom_aug_config is not None:
+        final_aug_config = custom_aug_config
+        print("Using custom augmentation config from YAML.")
+    else:
+        final_aug_config = VARIA_AUG_CONFIG
+        print("Using default VARIA augmentation config.")
+
     model = RFDETRLarge()
     
     model.train(
@@ -119,8 +136,8 @@ if __name__ == "__main__":
         strategy="ddp" if cfg["devices"] > 1 else "auto",
         devices=cfg["devices"],
 
-        # Injeção do dicionário de augmentações do Albumentations
-        aug_config=VARIA_AUG_CONFIG,
+        # Inject the resolved augmentation configuration
+        aug_config=final_aug_config,
 
         resume=resume_arg
     )
