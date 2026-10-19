@@ -68,6 +68,20 @@ def main() -> None:
         batch_size=args.batch_size,
         device=args.device,
         resolution=args.resolution,
+
+        # ------------------------------------------------------------------
+        # Restore pre-1.10 defaults (all three flipped in 1.10.0)
+        # ------------------------------------------------------------------
+        # 1. Per-class AP keys (test/AP/<class>)
+        log_per_class_metrics=True,
+
+        # 2. Unconditional test loss (test/loss).
+        compute_val_loss=True,
+
+        # 3. Two-forward evaluation: EMA namespace + base-model namespace.
+        #    Emits both test/AP/<class> and test/ema/AP/<class>, matching
+        #    the 1.9 output exactly.
+        eval_base_model=True,
     )
 
     # Save metrics

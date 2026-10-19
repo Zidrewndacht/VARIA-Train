@@ -16,7 +16,7 @@ if errorlevel 1 (
     goto :wait_engine
 )
 
-docker compose up
+docker compose up --build
 
 pause
 pause

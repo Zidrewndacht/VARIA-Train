@@ -105,7 +105,7 @@ if __name__ == "__main__":
         print("Using default VARIA augmentation config.")
 
     model = RFDETRLarge()
-    
+
     model.train(
         dataset_dir=DATASET_DIR,
         output_dir=OUTPUT_DIR,
@@ -139,5 +139,21 @@ if __name__ == "__main__":
         # Inject the resolved augmentation configuration
         aug_config=final_aug_config,
 
-        resume=resume_arg
+        # ------------------------------------------------------------------
+        # Restore pre-1.10 defaults (all three flipped in 1.10.0)
+        # ------------------------------------------------------------------
+        # 1. Per-class AP keys (test/AP/<class>, val/AP/<class>)
+        log_per_class_metrics=True,
+
+        # 2. Unconditional validation loss (val/loss every epoch).
+        #    Without this, "auto" skips val/loss unless a scheduler or
+        #    callback monitors it.
+        compute_val_loss=True,
+
+        # 3. Two-forward validation: EMA namespace + base-model namespace.
+        #    Restores checkpoint_best_regular.pth and the non-ema val/*
+        #    metrics that 1.9 emitted.
+        eval_base_model=True,
+        
+        resume=resume_arg,
     )

@@ -18,4 +18,4 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install pinned RF-DETR with all needed extras
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir "rfdetr[train,loggers,cli,augment]==1.9.4"
+RUN pip install --no-cache-dir "rfdetr[train,loggers,cli,augment]==1.11.2"
