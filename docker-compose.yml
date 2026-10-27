@@ -12,6 +12,19 @@ services:
       # Mount host directory (Read-Write so we can burn the flag)
       # FALLBACK: If Conductor doesn't set VARIA_DATASET_DIR, use your manual path.
       # (Using forward slashes here prevents YAML parsing errors with backslashes)
+      # 
+      # ARCHITECTURE NOTE: This volume exists because Docker Desktop on
+      # Windows (WSL2 backend) has extremely poor bind-mount read performance. 
+      # The data-sync service copies the source data into a Docker-native volume ONCE, 
+      # then the trainer reads from the fast volume for potentially hundreds of epochs.
+      #
+      # Do NOT remove this volume and bind-mount the source directly into
+      # the trainer — that re-introduces the WSL2 bind-mount bottleneck on
+      # every epoch.
+      #
+      # Standalone usage: if VARIA_DATASET_DIR is not set (no Conductor),
+      # the fallback path below is used. Step 6 writes .new_data_flag into
+      # output_sliced/, so standalone docker compose runs still sync correctly.
       - "${VARIA_DATASET_DIR:-D:/!staging/@Mestrado/PCBA-AOI/output_sliced}:/src"
 ##########################################################################     
       # Mount the Docker volume for the destination
@@ -30,7 +43,6 @@ services:
         exit 0;
       fi
       "
-
   # ======================================================================
   # RF-DETR TRAINING / EVALUATION SERVICE
   # ======================================================================
