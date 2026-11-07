@@ -51,7 +51,10 @@ services:
       data-sync:
         condition: service_completed_successfully
     build: .
-    container_name: varia_rfdetr_trainer
+    # container_name removed deliberately: two parallel Conductor instances
+    # may share this compose project. Docker Compose auto-generates unique names
+    # from ${COMPOSE_PROJECT_NAME}_{service}_{replica}, which Conductor sets
+    # per instance. A hardcoded name makes parallel runs impossible.
     runtime: nvidia
     deploy:
       resources:
@@ -92,4 +95,6 @@ services:
 
 volumes:
   varia_sliced_dataset:
-    name: varia_sliced_dataset
+    # Conductor overrides this per-instance. Standalone runs without
+    # VARIA_DOCKER_VOLUME_NAME resolve to the original name.
+    name: ${VARIA_DOCKER_VOLUME_NAME:-varia_sliced_dataset}
