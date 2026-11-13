@@ -5,8 +5,13 @@ services:
   # This is used to create a Docker volume with source training data
   # to avoid constantly reading data slowly from the WSL2 host.
   # ======================================================================  data-sync:
-  data-sync:
+data-sync:
     image: alpine:latest
+    # CRITICAL: Map the host env var into the dependency container.
+    # Without this, `docker compose run rfdetr` only passes VARIA_SYNC_MODE 
+    # to the rfdetr container, and data-sync defaults to 'train' mode.
+    environment:
+      - VARIA_SYNC_MODE=${VARIA_SYNC_MODE:-train}
     volumes:
 ##########################################################################
       # Mount host directory (Read-Write so we can burn the flag)
@@ -22,36 +27,41 @@ services:
       # the trainer — that re-introduces the WSL2 bind-mount bottleneck on
       # every epoch.
       #
-      - "${VARIA_DATASET_DIR:-D:/!staging/@Mestrado/PCBA-AOI/output_sliced}:/src"
+      - "${VARIA_DATASET_DIR:-D:/!staging/@Mestrado/PCBA-AOI/output_sliced}:/src"     
       ##########################################################################     
       # Mount the Docker volume for the destination
       - varia_sliced_dataset:/dest
-    command: >
-      sh -c "
-      if [ -f /dest/.sync_mode_${VARIA_SYNC_MODE:-train} ]
-      && [ -f /src/.dataset_id ]
-      && [ -f /dest/.dataset_id ]
-      && cmp -s /src/.dataset_id /dest/.dataset_id; then
-      echo '[data-sync] Fingerprint matches, mode unchanged. Skipping.';
-      exit 0;
-      fi;
-      if ! command -v rsync >/dev/null 2>&1; then
-      apk add --no-cache rsync >/dev/null 2>&1;
-      fi;
-      rm -rf /dest/train /dest/valid /dest/test /dest/.sync_mode_train /dest/.sync_mode_eval;
-      if [ ${VARIA_SYNC_MODE:-train} = eval ]; then
-      echo '[data-sync] Syncing test split (eval mode).';
-      rsync -a /src/test/ /dest/test/;
-      touch /dest/.sync_mode_eval;
-      else
-      echo '[data-sync] Syncing train+valid splits (train mode).';
-      rsync -a /src/train/ /dest/train/;
-      rsync -a /src/valid/ /dest/valid/;
-      touch /dest/.sync_mode_train;
-      fi;
-      cp /src/.dataset_id /dest/.dataset_id 2>/dev/null || true;
-      echo '[data-sync] Sync complete.';
-      "
+    # Using the YAML list format for command completely avoids shell/YAML quoting hell.
+    command:
+      - /bin/sh
+      - -c
+      - |
+        MODE=$$VARIA_SYNC_MODE
+        if [ -f /dest/.sync_mode_$$MODE ] && [ -f /src/.dataset_id ] && [ -f /dest/.dataset_id ] && cmp -s /src/.dataset_id /dest/.dataset_id; then
+          echo "[data-sync] Fingerprint matches, mode unchanged. Skipping."
+          exit 0
+        fi
+        if ! command -v rsync >/dev/null 2>&1; then
+          apk add --no-cache rsync >/dev/null 2>&1
+        fi
+        rm -rf /dest/train /dest/valid /dest/test /dest/.sync_mode_train /dest/.sync_mode_eval
+        if [ "$$MODE" = "eval" ]; then
+          echo "[data-sync] Syncing test split (eval mode)."
+          rsync -a /src/test/ /dest/test/
+          # RF-DETR's format detector rigidly checks for train/valid annotations 
+          # even when evaluating only the test split. Create empty dirs with the JSONs.
+          mkdir -p /dest/train /dest/valid
+          cp /src/train/_annotations.coco.json /dest/train/ 2>/dev/null || true
+          cp /src/valid/_annotations.coco.json /dest/valid/ 2>/dev/null || true
+          touch /dest/.sync_mode_eval
+        else
+          echo "[data-sync] Syncing train+valid splits (train mode)."
+          rsync -a /src/train/ /dest/train/
+          rsync -a /src/valid/ /dest/valid/
+          touch /dest/.sync_mode_train
+        fi
+        cp /src/.dataset_id /dest/.dataset_id 2>/dev/null || true
+        echo "[data-sync] Sync complete."
   # ======================================================================
   # RF-DETR TRAINING / EVALUATION SERVICE
   # ======================================================================
